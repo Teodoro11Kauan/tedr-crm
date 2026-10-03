@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TEDR CRM</title>
+<link rel="icon" href="/logo.png">
+<style>
+:root{--bg:#f2f4f9;--surface:#fff;--col:#e6eaf3;--ink:#16203a;--mute:#66708a;--line:#d5dbe8;--acc:#1e4fb5;--acc-ink:#fff;--warn:#c2410c;--bad:#b03a3a;--ok:#0e7a5f}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1524;--surface:#182036;--col:#131a2c;--ink:#e6eaf5;--mute:#8d98b3;--line:#2a3450;--acc:#5b8def;--acc-ink:#071330;--warn:#f0925b;--bad:#e58a8a;--ok:#3ec79f}}
+html{height:100%}*,*:before,*:after{box-sizing:border-box}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:8px 20px;border-bottom:1px solid var(--line);background:var(--surface)}
+header img{height:46px}
+.total{color:var(--mute);font-size:13px}.total b{color:var(--ink)}
+.sp{flex:1}
+input,select,textarea,button{font:inherit;color:inherit}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+input[type=checkbox]{width:auto}input[type=color]{padding:0;width:34px;height:34px;flex:none;cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+#q{width:200px}
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:600}
+.btn.p{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}.btn.d{color:var(--bad)}.btn.s{padding:5px 9px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:default}
+.funnels{display:flex;gap:6px;padding:10px 20px 0;overflow-x:auto;border-bottom:1px solid var(--line);background:var(--surface)}
+.ft{border:0;background:none;padding:8px 14px;cursor:pointer;font-weight:600;color:var(--mute);border-bottom:3px solid transparent;white-space:nowrap}
+.ft.on{color:var(--acc);border-color:var(--acc)}
+main{flex:1;min-height:0;display:flex;gap:12px;padding:16px 20px;overflow-x:auto}
+.col{flex:0 0 272px;background:var(--col);border-radius:10px;display:flex;flex-direction:column;max-height:100%;border-top:3px solid var(--c)}
+.col.over{outline:2px dashed var(--acc)}
+.ch{padding:10px 12px 6px}.ch h2{margin:0;font-size:14px;display:flex;gap:6px;align-items:center}
+.ch .n{flex:1;cursor:text}.ch h2 span:not(.n){color:var(--mute);font-weight:500}.ch small{color:var(--mute)}
+.cards{flex:1;overflow-y:auto;padding:6px 8px;display:flex;flex-direction:column;gap:8px;min-height:40px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:grab}
+.card:hover{border-color:var(--acc)}.card.drag{opacity:.4}.card .t{font-weight:600}.card .o{color:var(--mute);font-size:13px}
+.card .f{display:flex;justify-content:space-between;margin-top:8px;font-size:13px}.card .v{font-weight:700}.late{color:var(--warn);font-weight:600}
+.add{margin:6px 8px 8px;padding:7px;border:1px dashed var(--line);border-radius:6px;background:none;color:var(--mute);cursor:pointer}
+.add:hover{color:var(--acc);border-color:var(--acc)}.empty{color:var(--mute);font-size:13px;text-align:center;padding:14px 6px}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:0;width:min(460px,94vw)}
+dialog#cfg{width:min(680px,96vw)}dialog::backdrop{background:rgba(0,0,0,.5)}
+form{padding:18px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px}h3{grid-column:1/-1;margin:0;font-size:16px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mute);font-weight:600}.w{grid-column:1/-1}
+.acts{grid-column:1/-1;display:flex;gap:8px;justify-content:flex-end}
+.tabs{display:flex;gap:4px;padding:12px 20px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.tab{border:0;background:none;padding:8px 12px;cursor:pointer;font-weight:600;color:var(--mute);border-bottom:2px solid transparent}.tab.on{color:var(--ink);border-color:var(--acc)}
+.pane{padding:16px 20px;display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:66vh}
+.row{display:flex;gap:8px;align-items:center}.row select{width:120px;flex:none}
+.hook{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.chk{display:flex;flex-wrap:wrap;gap:6px 14px}.chk label,label.inl{flex-direction:row;align-items:center;gap:6px;font-weight:500;color:var(--ink);font-size:13px}
+.note{color:var(--mute);font-size:12.5px;margin:0}.warn{color:var(--warn);font-size:12.5px;margin:0}
+.log{font-size:12.5px;border-top:1px solid var(--line);padding-top:8px;display:flex;flex-direction:column;gap:3px}.ok{color:var(--ok)}.er{color:var(--bad)}
+code,pre{background:var(--col);border-radius:6px;font-size:12px}code{padding:1px 5px}pre{padding:10px;overflow-x:auto;margin:0;white-space:pre-wrap;word-break:break-all}
+#login{position:fixed;inset:0;background:var(--bg);display:none;align-items:center;justify-content:center;z-index:10;padding:16px}
+#login .box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px;width:min(340px,100%);display:flex;flex-direction:column;gap:12px;align-items:stretch}
+#login img{height:150px;align-self:center}#lerr{color:var(--bad);font-size:13px;min-height:18px}
+@media (max-width:600px){#q{width:100%;order:9}.col{flex-basis:84vw}.row{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div id="login"><div class="box"><img src="/logo.png" alt="TEDR CRM">
+<div class="row" style="justify-content:center;gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden">
+  <button type="button" class="btn s" id="modeLogin" style="flex:1;border:0;border-radius:0">Entrar</button>
+  <button type="button" class="btn s" id="modeSignup" style="flex:1;border:0;border-radius:0;background:transparent">Criar conta</button>
+</div>
+<input id="lu" placeholder="E-mail" autocomplete="username"><input id="lp" type="password" placeholder="Senha (mín. 8 caracteres)" autocomplete="current-password">
+<div id="lerr"></div><button class="btn p" id="lbtn">Entrar</button></div></div>
+
+<header><img src="/logo.png" alt="TEDR CRM"><div class="total" id="tot"></div><div class="sp"></div>
+<input id="q" type="search" placeholder="Buscar negócio, empresa ou contato" aria-label="Buscar">
+<button class="btn" id="cfgBtn">Configurações</button><button class="btn p" id="new">+ Novo negócio</button></header>
+<nav class="funnels" id="funnels"></nav>
+<main id="board"></main>
+
+<dialog id="dlg"><form method="dialog" onsubmit="return false"><h3 id="dt"></h3>
+<label class="w">Título do negócio<input id="title"></label><label>Empresa<input id="org"></label><label>Contato<input id="contact"></label>
+<label>E-mail<input id="email" type="email"></label><label>Telefone<input id="phone" type="tel"></label>
+<label>Valor (R$)<input id="value" type="number" min="0" step="0.01"></label><label>Previsão de fechamento<input id="close_date" type="date"></label>
+<label class="w">Etapa<select id="stage_id"></select></label><label class="w">Notas<textarea id="notes" rows="3"></textarea></label>
+<div class="acts"><button type="button" class="btn d" id="del">Excluir</button><span class="sp"></span><button type="button" class="btn" id="cancel">Cancelar</button><button type="button" class="btn p" id="save">Salvar</button></div></form></dialog>
+
+<dialog id="cfg"><div class="tabs"><button class="tab" data-t="funil">Funil</button><button class="tab" data-t="hooks">Webhooks</button><button class="tab" data-t="usuarios">Usuários</button><button class="tab" data-t="n8n">n8n / API</button>
+<span class="sp"></span><button class="btn s" id="logout" style="margin-bottom:6px">Sair</button><button class="btn s" id="cfgClose" style="margin-bottom:6px">Fechar</button></div><div class="pane" id="pane"></div></dialog>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import { getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAw49f9k5e3hhp45rylILJROJWQVVh87mw",
+  authDomain: "tedr-crm.firebaseapp.com",
+  projectId: "tedr-crm",
+  storageBucket: "tedr-crm.firebasestorage.app",
+  messagingSenderId: "809218042952",
+  appId: "1:809218042952:web:8d4cf140edcbc8a54ebc7d"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const dbf = getFirestore(app);
+let uid = null;
+
+const $=id=>document.getElementById(id),brl=v=>(v||0).toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+const today=()=>new Date().toISOString().slice(0,10);
+const KINDS={open:"Aberto",won:"Ganho",lost:"Perdido"},EVENTS={stage_changed:"Mudou de etapa",deal_created:"Criado",deal_updated:"Editado",deal_deleted:"Excluído"};
+let F=[],fid=localStorage.getItem("tedr_fid")||"",stages=[],deals=[],hooks=[],log=JSON.parse(sessionStorage.getItem("tedr_log")||"[]");
+let unsubF=null,unsubS=null,unsubD=null,unsubH=null,tab="funil",editing=null,dragId=null,prevDeals=new Map();
+
+const col = (...p) => collection(dbf,"crm",uid,...p);
+const docr = (...p) => doc(dbf,"crm",uid,...p);
+
+/* ---------- login / criar conta ---------- */
+let mode="login";
+function setMode(m){mode=m;$("lerr").textContent="";
+  $("modeLogin").style.background=m==="login"?"var(--surface)":"transparent";
+  $("modeSignup").style.background=m==="signup"?"var(--surface)":"transparent";
+  $("lbtn").textContent=m==="login"?"Entrar":"Criar conta"}
+$("modeLogin").onclick=()=>setMode("login");$("modeSignup").onclick=()=>setMode("signup");
+$("lbtn").onclick=async()=>{$("lerr").textContent="";
+  const email=$("lu").value.trim(),pass=$("lp").value;
+  if(!email||pass.length<8)return $("lerr").textContent="Informe o e-mail e uma senha com ao menos 8 caracteres.";
+  $("lbtn").disabled=true;
+  try{
+    if(mode==="login")await signInWithEmailAndPassword(auth,email,pass);
+    else await createUserWithEmailAndPassword(auth,email,pass);
+  }catch(e){
+    const m={"auth/invalid-credential":"E-mail ou senha inválidos.","auth/user-not-found":"E-mail ou senha inválidos.","auth/wrong-password":"E-mail ou senha inválidos.",
+      "auth/email-already-in-use":"Este e-mail já tem uma conta. Use \"Entrar\".","auth/weak-password":"Senha fraca demais (mín. 8 caracteres).","auth/invalid-email":"E-mail inválido."};
+    $("lerr").textContent=m[e.code]||("Não foi possível continuar ("+(e.code||e.message)+").")
+  }finally{$("lbtn").disabled=false}};
+$("lp").onkeydown=e=>{if(e.key==="Enter")$("lbtn").click()};
+$("logout").onclick=()=>{if(confirm("Sair?"))signOut(auth)};
+
+/* Criar um novo usuário sem derrubar a sua sessão: usa uma segunda instância do Firebase só para o cadastro. */
+async function createUserKeepingSession(email,pass){
+  const { initializeApp: initApp2, deleteApp } = await import("https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js");
+  const secondary=initApp2(firebaseConfig,"secondary-"+Date.now());
+  const auth2=getAuth(secondary);
+  try{await createUserWithEmailAndPassword(auth2,email,pass);}
+  finally{await signOut(auth2).catch(()=>{});await deleteApp(secondary)}}
+
+onAuthStateChanged(auth, async user => {
+  [unsubF,unsubS,unsubD,unsubH].forEach(u=>u&&u());
+  if(!user){uid=null;$("login").style.display="flex";$("cfg").close();return}
+  uid=user.uid;$("login").style.display="none";
+  watchHooks();
+  await ensureDefaultFunnel();
+  unsubF=onSnapshot(query(col("funnels"),orderBy("position")), snap=>{
+    F=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(!F.find(f=>f.id===fid))fid=F[0]?.id||"";
+    localStorage.setItem("tedr_fid",fid);
+    watchFunnel();renderTabs()});
+});
+
+async function ensureDefaultFunnel(){
+  const snap=await new Promise(res=>{const u=onSnapshot(collection(dbf,"crm",uid,"funnels"),s=>{u();res(s)})});
+  if(!snap.empty)return;
+  await newFunnelDoc("Vendas");
+}
+const DEFAULT_STAGES=[["Prospecção","#8a9a94","open"],["Contato feito","#4a8fb5","open"],["Proposta enviada","#b58a2f","open"],["Negociação","#8a5fb5","open"],["Ganho","#0e9a6f","won"],["Perdido","#b55a5a","lost"]];
+async function newFunnelDoc(name){
+  const pos=F.length?Math.max(...F.map(f=>f.position||0))+1:0;
+  const fr=await addDoc(col("funnels"),{name,position:pos});
+  const b=writeBatch(dbf);
+  DEFAULT_STAGES.forEach(([n,c,k],i)=>b.set(doc(col("funnels",fr.id,"stages")),{name:n,color:c,kind:k,position:i}));
+  await b.commit();return fr.id}
+
+/* ---------- dados do funil aberto ---------- */
+function watchFunnel(){
+  unsubS&&unsubS();unsubD&&unsubD();
+  window.__firstLoadDone=false;prevDeals=new Map();
+  if(!fid){stages=[];deals=[];render();return}
+  unsubS=onSnapshot(query(col("funnels",fid,"stages"),orderBy("position")), s=>{stages=s.docs.map(d=>({id:d.id,...d.data()}));render()});
+  unsubD=onSnapshot(col("funnels",fid,"deals"), s=>{
+    deals=s.docs.map(d=>({id:d.id,...d.data()}));
+    detectWebhookEvents(s);
+    render()});
+}
+function watchHooks(){unsubH&&unsubH();unsubH=onSnapshot(col("hooks"), s=>{hooks=s.docs.map(d=>({id:d.id,...d.data()}));if(tab==="hooks")cfgHtml()})}
+
+const kind=id=>(stages.find(s=>s.id===id)||{}).kind;
+
+/* ---------- webhooks disparados pelo navegador ----------
+   Sem servidor, o envio só acontece enquanto esta aba do CRM está aberta. */
+function dealPayload(d){const s=stages.find(x=>x.id===d.stage_id)||{};return{id:d.id,title:d.title,org:d.org,contact:d.contact,email:d.email,phone:d.phone,value:+d.value||0,expected_close_date:d.close_date,notes:d.notes,stage_id:d.stage_id,stage_name:s.name,stage_kind:s.kind,funnel_id:fid}}
+async function fireWebhooks(event,deal,fromStage){
+  const p={event,source:"ui",timestamp:new Date().toISOString(),deal:dealPayload(deal),...(fromStage?{from_stage:fromStage}:{})};
+  for(const h of hooks){
+    if(!h.active||!h.url||!(h.events||[]).includes(event))continue;
+    if(h.funnel_id&&h.funnel_id!==fid)continue;
+    send(h,event,p)}}
+async function send(h,event,payload){
+  let ok=false,msg="";
+  try{const r=await fetch(h.url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});ok=r.ok;msg="HTTP "+r.status}
+  catch(e){msg="falha: "+e.message}
+  log.unshift({t:Date.now(),hook:h.name||h.url,event,ok,msg});log=log.slice(0,30);sessionStorage.setItem("tedr_log",JSON.stringify(log));
+  if(tab==="hooks")cfgHtml()}
+function detectWebhookEvents(snap){
+  if(!window.__firstLoadDone){window.__firstLoadDone=true;prevDeals=new Map(snap.docs.map(d=>[d.id,{id:d.id,...d.data()}]));return}
+  snap.docChanges().forEach(ch=>{
+    const d={id:ch.doc.id,...ch.doc.data()};
+    if(ch.type==="added"){fireWebhooks("deal_created",d);prevDeals.set(d.id,d)}
+    else if(ch.type==="removed"){fireWebhooks("deal_deleted",prevDeals.get(d.id)||d);prevDeals.delete(d.id)}
+    else if(ch.type==="modified"){
+      const prev=prevDeals.get(d.id);
+      if(prev&&prev.stage_id!==d.stage_id){const os=stages.find(s=>s.id===prev.stage_id)||{};fireWebhooks("stage_changed",d,{id:prev.stage_id,name:os.name})}
+      else fireWebhooks("deal_updated",d);
+      prevDeals.set(d.id,d)}
+  })}
+
+/* ---------- kanban ---------- */
+function renderTabs(){
+  $("funnels").innerHTML=F.map(f=>`<button class="ft${f.id===fid?" on":""}" data-id="${f.id}">${esc(f.name)}</button>`).join("")+`<button class="ft" id="addFunnel">+ Funil</button>`;
+  $("funnels").querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>{fid=b.dataset.id;localStorage.setItem("tedr_fid",fid);watchFunnel();renderTabs()});
+  $("addFunnel").onclick=async()=>{const n=prompt("Nome do novo funil:");if(n&&n.trim()){fid=await newFunnelDoc(n.trim());localStorage.setItem("tedr_fid",fid);watchFunnel();renderTabs()}}}
+
+function render(){
+  const b=$("board");b.innerHTML="";const q=query_.toLowerCase();
+  const vis=deals.filter(d=>!q||[d.title,d.org,d.contact].join(" ").toLowerCase().includes(q));
+  stages.forEach(s=>{
+    const list=vis.filter(d=>d.stage_id===s.id),sum=list.reduce((a,d)=>a+(+d.value||0),0);
+    const c=document.createElement("section");c.className="col";c.style.setProperty("--c",s.color);
+    c.innerHTML=`<div class="ch"><h2><span class="n" title="Clique duas vezes para renomear">${esc(s.name)}</span><span>${list.length}</span></h2><small>${brl(sum)}</small></div><div class="cards"></div><button class="add">+ Adicionar</button>`;
+    const cards=c.querySelector(".cards");if(!list.length)cards.innerHTML='<div class="empty">Arraste um negócio para cá</div>';
+    list.forEach(d=>{const late=d.close_date&&d.close_date<today()&&s.kind==="open",el=document.createElement("div");el.className="card";el.draggable=true;
+      el.innerHTML=`<div class="t">${esc(d.title)}</div><div class="o">${esc(d.org)}${d.org&&d.contact?" · ":""}${esc(d.contact)}</div><div class="f"><span class="v">${brl(+d.value)}</span><span class="${late?"late":"o"}">${d.close_date?(late?"Atrasado · ":"")+d.close_date.split("-").reverse().slice(0,2).join("/"):""}</span></div>`;
+      el.onclick=()=>openDlg(d);el.ondragstart=e=>{dragId=d.id;el.classList.add("drag");e.dataTransfer.setData("text/plain",d.id)};el.ondragend=()=>el.classList.remove("drag");cards.appendChild(el)});
+    c.ondragover=e=>{e.preventDefault();c.classList.add("over")};c.ondragleave=()=>c.classList.remove("over");
+    c.ondrop=e=>{e.preventDefault();c.classList.remove("over");const d=deals.find(x=>x.id===dragId);
+      if(d&&d.stage_id!==s.id)updateDoc(docr("funnels",fid,"deals",d.id),{stage_id:s.id,updated_at:serverTimestamp()})};
+    c.querySelector(".add").onclick=()=>openDlg(null,s.id);
+    c.querySelector(".n").ondblclick=()=>{const v=prompt("Novo nome da etapa:",s.name);if(v&&v.trim())updateDoc(docr("funnels",fid,"stages",s.id),{name:v.trim()})};
+    b.appendChild(c)});
+  const sm=l=>brl(l.reduce((a,d)=>a+(+d.value||0),0)),op=deals.filter(d=>kind(d.stage_id)==="open"),wn=deals.filter(d=>kind(d.stage_id)==="won");
+  $("tot").innerHTML=`Em aberto: <b>${sm(op)}</b> (${op.length}) · Ganho: <b>${sm(wn)}</b>`}
+let query_="";
+
+const FIELDS=["title","org","contact","email","phone","value","close_date","notes","stage_id"];
+function openDlg(d,stage){editing=d;$("dt").textContent=d?"Editar negócio":"Novo negócio";
+  $("stage_id").innerHTML=stages.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("");
+  const f=d||{stage_id:stage||stages[0]?.id};FIELDS.forEach(k=>$(k).value=f[k]??"");$("del").style.display=d?"":"none";$("dlg").showModal();$("title").focus()}
+$("save").onclick=async()=>{if(!$("title").value.trim())return $("title").focus();
+  const b={};FIELDS.forEach(k=>b[k]=$(k).value);b.value=parseFloat(b.value)||0;
+  if(editing)await updateDoc(docr("funnels",fid,"deals",editing.id),{...b,updated_at:serverTimestamp()});
+  else await addDoc(col("funnels",fid,"deals"),{...b,created_at:serverTimestamp(),updated_at:serverTimestamp()});
+  $("dlg").close()};
+$("del").onclick=async()=>{if(editing&&confirm("Excluir este negócio?")){await deleteDoc(docr("funnels",fid,"deals",editing.id));$("dlg").close()}};
+$("cancel").onclick=()=>$("dlg").close();$("new").onclick=()=>openDlg(null);$("q").oninput=e=>{query_=e.target.value;render()};
+
+/* ---------- configurações ---------- */
+$("cfgBtn").onclick=()=>openCfg(tab);$("cfgClose").onclick=()=>$("cfg").close();
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>openCfg(b.dataset.t));
+function openCfg(t){tab=t;cfgHtml();if(!$("cfg").open)$("cfg").showModal()}
+
+const mv=async(i,d)=>{const a=[...stages];const j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];
+  const b=writeBatch(dbf);a.forEach((s,k)=>b.update(docr("funnels",fid,"stages",s.id),{position:k}));await b.commit()};
+const addStage=async()=>{const pos=stages.length?Math.max(...stages.map(s=>s.position||0))+1:0;await addDoc(col("funnels",fid,"stages"),{name:"Nova etapa",color:"#6b7c93",kind:"open",position:pos})};
+const delStage=async i=>{const s=stages[i];if(stages.length<=1)return alert("O funil precisa ter ao menos uma etapa.");
+  const n=deals.filter(d=>d.stage_id===s.id).length,dest=stages[i===0?1:0];
+  if(!confirm(n?`Excluir "${s.name}"? Os ${n} negócio(s) vão para "${dest.name}".`:`Excluir "${s.name}"?`))return;
+  const b=writeBatch(dbf);deals.filter(d=>d.stage_id===s.id).forEach(d=>b.update(docr("funnels",fid,"deals",d.id),{stage_id:dest.id}));
+  b.delete(docr("funnels",fid,"stages",s.id));await b.commit()};
+const renFunnel=async v=>{if(v.trim())await updateDoc(docr("funnels",fid),{name:v.trim()})};
+const delFunnel=async()=>{if(F.length<=1)return alert("Mantenha ao menos um funil.");
+  if(!confirm("Excluir este funil e TODOS os negócios e etapas dentro dele?"))return;
+  const [sS,dS]=await Promise.all([new Promise(r=>{const u=onSnapshot(col("funnels",fid,"stages"),s=>{u();r(s)})}),new Promise(r=>{const u=onSnapshot(col("funnels",fid,"deals"),s=>{u();r(s)})})]);
+  const b=writeBatch(dbf);sS.docs.forEach(d=>b.delete(d.ref));dS.docs.forEach(d=>b.delete(d.ref));b.delete(docr("funnels",fid));await b.commit();
+  fid="";localStorage.removeItem("tedr_fid")};
+const hk=async(id,patch)=>updateDoc(docr("hooks",id),patch);
+const addHook=()=>addDoc(col("hooks"),{name:"n8n / Zapier / Make",url:"",events:["stage_changed"],funnel_id:null,active:true});
+const delHook=id=>confirm("Remover este webhook?")&&deleteDoc(docr("hooks",id));
+const testHook=id=>{const h=hooks.find(x=>x.id===id);send(h,"test",{event:"test",source:"ui",timestamp:new Date().toISOString(),deal:{id:"0",title:"Negócio de teste",value:1000}})};
+
+function cfgHtml(){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.t===tab));const p=$("pane");
+  if(tab==="funil"){const f=F.find(x=>x.id===fid)||{name:""};
+    p.innerHTML=`<label>Nome do funil<div class="row"><input value="${esc(f.name)}" id="fn"><button class="btn s d" style="flex:none" id="delF">Excluir funil</button></div></label>
+    <p class="note">Etapas deste funil. O tipo define os totais: "Ganho" soma como venda, "Aberto" como pipeline.</p>`+
+    stages.map((s,i)=>`<div class="row"><input type="color" value="${esc(s.color)}" aria-label="Cor" data-c="${s.id}"><input value="${esc(s.name)}" aria-label="Nome" data-n="${s.id}">
+      <select aria-label="Tipo" data-k="${s.id}">${Object.entries(KINDS).map(([k,v])=>`<option value="${k}"${s.kind===k?" selected":""}>${v}</option>`).join("")}</select>
+      <button class="btn s" data-up="${i}">↑</button><button class="btn s" data-dn="${i}">↓</button><button class="btn s d" data-del="${i}">✕</button></div>`).join("")+
+    `<div><button class="btn" id="addS">+ Adicionar etapa</button></div>`;
+    $("fn").onchange=e=>renFunnel(e.target.value);$("delF").onclick=delFunnel;$("addS").onclick=addStage;
+    stages.forEach((s,i)=>{p.querySelector(`[data-c="${s.id}"]`).onchange=e=>updateDoc(docr("funnels",fid,"stages",s.id),{color:e.target.value});
+      p.querySelector(`[data-n="${s.id}"]`).onchange=e=>updateDoc(docr("funnels",fid,"stages",s.id),{name:e.target.value});
+      p.querySelector(`[data-k="${s.id}"]`).onchange=e=>updateDoc(docr("funnels",fid,"stages",s.id),{kind:e.target.value})});
+    p.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>mv(+b.dataset.up,-1));p.querySelectorAll("[data-dn]").forEach(b=>b.onclick=()=>mv(+b.dataset.dn,1));
+    p.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>delStage(+b.dataset.del))}
+  else if(tab==="hooks"){
+    p.innerHTML=`<p class="note"><b>Sem servidor próprio, o envio parte do seu navegador</b> — funciona enquanto esta aba do CRM estiver aberta em algum dispositivo. Fechou a aba, os webhooks não disparam. Se seu n8n roda em localhost, ele não recebe nada de fora (veja a aba n8n/API para buscar as mudanças por lá em vez de receber).</p>`+
+    hooks.map(h=>`<div class="hook"><div class="row"><input value="${esc(h.name)}" placeholder="Nome" data-hn="${h.id}"><label class="inl" style="flex:none"><input type="checkbox" ${h.active?"checked":""} data-ha="${h.id}"> Ativo</label></div>
+      <input value="${esc(h.url)}" placeholder="https://…" data-hu="${h.id}">
+      <div class="chk">${Object.entries(EVENTS).map(([k,v])=>`<label><input type="checkbox" ${(h.events||[]).includes(k)?"checked":""} data-he="${h.id}" data-hev="${k}">${v}</label>`).join("")}</div>
+      <label>Funil<select data-hf="${h.id}"><option value="">Todos os funis</option>${F.map(f=>`<option value="${f.id}"${h.funnel_id===f.id?" selected":""}>${esc(f.name)}</option>`).join("")}</select></label>
+      <div class="row"><button class="btn s" data-ht="${h.id}">Enviar teste</button><span class="sp"></span><button class="btn s d" data-hd="${h.id}">Remover</button></div></div>`).join("")+
+    `<div><button class="btn" id="addH">+ Novo webhook</button></div><div class="log"><b>Últimos envios (nesta sessão)</b>${log.length?log.map(l=>`<div class="${l.ok?"ok":"er"}">${new Date(l.t).toLocaleTimeString("pt-BR")} · ${esc(l.hook)} · ${esc(EVENTS[l.event]||l.event)} · ${esc(l.msg)}</div>`).join(""):'<span class="note">Nenhum envio ainda.</span>'}</div>`;
+    $("addH").onclick=addHook;
+    hooks.forEach(h=>{p.querySelector(`[data-hn="${h.id}"]`).onchange=e=>hk(h.id,{name:e.target.value});
+      p.querySelector(`[data-hu="${h.id}"]`).onchange=e=>hk(h.id,{url:e.target.value.trim()});
+      p.querySelector(`[data-ha="${h.id}"]`).onchange=e=>hk(h.id,{active:e.target.checked});
+      p.querySelector(`[data-hf="${h.id}"]`).onchange=e=>hk(h.id,{funnel_id:e.target.value||null});
+      p.querySelectorAll(`[data-he="${h.id}"]`).forEach(cb=>cb.onchange=e=>{const evs=new Set(h.events||[]);e.target.checked?evs.add(cb.dataset.hev):evs.delete(cb.dataset.hev);hk(h.id,{events:[...evs]})});
+      p.querySelector(`[data-ht="${h.id}"]`).onclick=()=>testHook(h.id);p.querySelector(`[data-hd="${h.id}"]`).onclick=()=>delHook(h.id)})}
+  else if(tab==="usuarios"){
+    p.innerHTML=`<p class="note">Cria um novo e-mail e senha com acesso ao TEDR CRM (por exemplo, um usuário só para o n8n usar). A pessoa entra pela tela de login, em "Entrar" — não precisa passar por "Criar conta". Você continua logado no seu usuário normalmente depois de criar.</p>
+    <label>E-mail do novo usuário<input id="nuE" type="email" placeholder="n8n@seudominio.com"></label>
+    <label>Senha (mín. 8 caracteres)<input id="nuP" type="password"></label>
+    <div class="row"><button class="btn p" id="nuBtn" style="flex:none">Criar usuário</button><span id="nuMsg" class="note"></span></div>
+    <p class="warn">Cada pessoa com uma conta vê e edita só os próprios funis — os dados não são compartilhados automaticamente entre usuários. Se o objetivo é o n8n acessar ESTES mesmos dados, use seu próprio e-mail e senha na aba "n8n / API" em vez de criar outro usuário aqui.</p>`;
+    $("nuBtn").onclick=async()=>{const email=$("nuE").value.trim(),pass=$("nuP").value,msg=$("nuMsg");
+      if(!email||pass.length<8){msg.textContent="Informe e-mail e senha (mín. 8 caracteres).";msg.className="warn";return}
+      $("nuBtn").disabled=true;msg.textContent="Criando…";msg.className="note";
+      try{await createUserKeepingSession(email,pass);msg.textContent="Usuário criado.";msg.className="note";$("nuE").value="";$("nuP").value=""}
+      catch(e){msg.textContent=e.code==="auth/email-already-in-use"?"Este e-mail já tem conta.":"Erro: "+(e.code||e.message);msg.className="warn"}
+      finally{$("nuBtn").disabled=false}}}
+  else{
+    p.innerHTML=`<p class="warn">O n8n não usa mais uma "chave de API" fixa. Como os dados agora moram no Firestore, ele precisa entrar com o MESMO usuário e senha do CRM (ou outro usuário criado só para isso no Firebase Authentication).</p>
+    <p class="note">1) Pegar um token de acesso (vale por 1 hora):</p>
+    <pre>POST https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${firebaseConfig.apiKey}
+Content-Type: application/json
+
+{"email":"seu@email.com","password":"sua-senha","returnSecureToken":true}</pre>
+    <p class="note">A resposta traz <code>idToken</code> (use em "Authorization: Bearer") e <code>localId</code> (é o seu uid: <code>${uid||"…"}</code>).</p>
+    <p class="note">2) Criar um negócio (POST). Trocar <code>{TOKEN}</code> pelo idToken:</p>
+    <pre>POST https://firestore.googleapis.com/v1/projects/tedr-crm/databases/(default)/documents/crm/${uid||"{uid}"}/funnels/${fid||"{funnel_id}"}/deals
+Authorization: Bearer {TOKEN}
+Content-Type: application/json
+
+{"fields":{
+  "title":{"stringValue":"Negócio criado pelo n8n"},
+  "org":{"stringValue":"Empresa Teste"},
+  "value":{"doubleValue":1500},
+  "stage_id":{"stringValue":"${stages[0]?.id||'ID_DA_ETAPA'}"}
+}}</pre>
+    <p class="note">3) Mover de etapa (PATCH, só o campo enviado muda — usar <code>updateMask.fieldPaths=stage_id</code> na URL):</p>
+    <pre>PATCH .../deals/{deal_id}?updateMask.fieldPaths=stage_id
+Authorization: Bearer {TOKEN}
+
+{"fields":{"stage_id":{"stringValue":"ID_DA_NOVA_ETAPA"}}}</pre>
+    <p class="note">4) Excluir: <code>DELETE</code> na mesma URL do negócio, sem corpo.</p>
+    <p class="note">O <code>stage_id</code> é o ID do documento da etapa (não o nome). Para descobrir os IDs: <code>GET .../funnels/${fid||"{funnel_id}"}/stages</code> com o mesmo token.</p>
+    <p class="note">No n8n, use o nó HTTP Request duas vezes em sequência (login, depois a chamada), ou guarde o <code>idToken</code> numa credencial "Header Auth" e renove a cada execução — ele expira em 1h.</p>`}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+rules_version = '2';
+
+// Cada usuário só enxerga e altera os próprios dados, em /crm/{uid}/...
+// O n8n precisa entrar com um usuário (e-mail e senha) criado no Firebase Authentication
+// e usar o token dele — sem token válido, nada é lido nem gravado.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /crm/{uid}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}
