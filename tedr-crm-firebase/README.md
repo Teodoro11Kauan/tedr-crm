@@ -36,3 +36,9 @@ Isso exige Cloud Functions, e o Firebase pede que o projeto esteja no plano Blaz
 - As regras do Firestore restringem cada usuário aos próprios dados (`/crm/{uid}/...`). Sem estar autenticado, nada é lido nem gravado.
 - A `apiKey` do Firebase que aparece no código não é secreta — ela só identifica o projeto; quem protege os dados são as regras do Firestore e o Authentication.
 - Publique as regras (`firebase deploy --only firestore:rules`) antes de guardar qualquer dado real — com o banco criado em "modo teste", qualquer pessoa lê e escreve.
+
+## v2 — Prospecção (botão "Prospecção" no topo)
+
+- **Lista de clientes:** informe nicho + cidade e clique em "Buscar e preencher a lista" — empresa, nicho, endereço e número entram na planilha (sem duplicar). Fontes: OpenStreetMap (grátis, sem chave, mas cobertura de telefone no Brasil é irregular) ou Google Places (bem mais completo; exige chave de API em "Chave Google" e conta de faturamento no Google Cloud).
+- **Contatos:** "Contatar →" move a linha para a planilha de contatos (data e hora, falei com quem, status múltiplos e criáveis, responsável, horário, observações). "Enviar ao CRM" cria um negócio na primeira etapa do funil aberto (e dispara os webhooks normais).
+- Dados em `/crm/{uid}/leads` e `/crm/{uid}/lstatus`; as regras do Firestore já cobrem isso, não precisa mudar nada.

@@ -54,6 +54,14 @@ code,pre{background:var(--col);border-radius:6px;font-size:12px}code{padding:1px
 #login .box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:26px;width:min(340px,100%);display:flex;flex-direction:column;gap:12px;align-items:stretch}
 #login img{height:150px;align-self:center}#lerr{color:var(--bad);font-size:13px;min-height:18px}
 @media (max-width:600px){#q{width:100%;order:9}.col{flex-basis:84vw}.row{flex-wrap:wrap}}
+#prosp{flex:1;min-height:0;overflow:auto;padding:12px 20px}
+.pbar,.pform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}.pform input,.pform select{width:auto;flex:1 1 150px}
+.sheet{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);font-size:13px}
+.sheet th{text-align:left;padding:8px;background:var(--col);color:var(--mute);font-size:12px;white-space:nowrap}
+.sheet td{padding:4px;border-top:1px solid var(--line);vertical-align:top}.sheet td input,.sheet td textarea,.sheet td select{padding:5px 7px;min-width:110px}.sheet td textarea{resize:vertical;min-width:180px}
+.ac{white-space:nowrap}.mu{color:var(--mute);font-size:12px;padding:2px 7px}
+.chip{display:inline-block;margin:2px;padding:3px 9px;border:1px solid var(--c);border-radius:99px;cursor:pointer;font-size:12px;color:var(--c);user-select:none}.chip.on{background:var(--c);color:#fff}
+#stbar{margin-bottom:10px}body.pv #q,body.pv #new,body.pv #funnels,body.pv #board{display:none}
 </style>
 </head>
 <body>
@@ -67,9 +75,14 @@ code,pre{background:var(--col);border-radius:6px;font-size:12px}code{padding:1px
 
 <header><img src="/logo.png" alt="TEDR CRM"><div class="total" id="tot"></div><div class="sp"></div>
 <input id="q" type="search" placeholder="Buscar negócio, empresa ou contato" aria-label="Buscar">
-<button class="btn" id="cfgBtn">Configurações</button><button class="btn p" id="new">+ Novo negócio</button></header>
+<button class="btn" id="vw">Prospecção</button><button class="btn" id="cfgBtn">Configurações</button><button class="btn p" id="new">+ Novo negócio</button></header>
 <nav class="funnels" id="funnels"></nav>
 <main id="board"></main>
+<section id="prosp" style="display:none">
+<div class="pbar"><button class="ft on" data-pt="lista">Lista de clientes</button><button class="ft" data-pt="contato">Contatos</button><span class="sp"></span><input id="pq" type="search" placeholder="Filtrar a planilha" style="width:200px"></div>
+<div class="pform" id="pform"><input id="sn" placeholder="Nicho (ex.: pizzaria, dentista)"><input id="sc" placeholder="Cidade (ex.: Varginha MG)"><select id="ss"><option value="osm">OpenStreetMap (grátis)</option><option value="google">Google Places (precisa de chave)</option></select><button class="btn p" data-a="search">Buscar e preencher a lista</button><button class="btn" data-a="key">Chave Google</button><span class="note" id="sm"></span></div>
+<div id="stbar"></div><div id="sheet"></div></section>
+
 
 <dialog id="dlg"><form method="dialog" onsubmit="return false"><h3 id="dt"></h3>
 <label class="w">Título do negócio<input id="title"></label><label>Empresa<input id="org"></label><label>Contato<input id="contact"></label>
@@ -106,7 +119,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&
 const today=()=>new Date().toISOString().slice(0,10);
 const KINDS={open:"Aberto",won:"Ganho",lost:"Perdido"},EVENTS={stage_changed:"Mudou de etapa",deal_created:"Criado",deal_updated:"Editado",deal_deleted:"Excluído"};
 let F=[],fid=localStorage.getItem("tedr_fid")||"",stages=[],deals=[],hooks=[],log=JSON.parse(sessionStorage.getItem("tedr_log")||"[]");
-let unsubF=null,unsubS=null,unsubD=null,unsubH=null,tab="funil",editing=null,dragId=null,prevDeals=new Map();
+let unsubF=null,unsubS=null,unsubD=null,unsubH=null,unsubL=null,unsubT=null,tab="funil",editing=null,dragId=null,prevDeals=new Map();
 
 const col = (...p) => collection(dbf,"crm",uid,...p);
 const docr = (...p) => doc(dbf,"crm",uid,...p);
@@ -142,10 +155,10 @@ async function createUserKeepingSession(email,pass){
   finally{await signOut(auth2).catch(()=>{});await deleteApp(secondary)}}
 
 onAuthStateChanged(auth, async user => {
-  [unsubF,unsubS,unsubD,unsubH].forEach(u=>u&&u());
+  [unsubF,unsubS,unsubD,unsubH,unsubL,unsubT].forEach(u=>u&&u());
   if(!user){uid=null;$("login").style.display="flex";$("cfg").close();return}
   uid=user.uid;$("login").style.display="none";
-  watchHooks();
+  watchHooks();watchProsp();
   await ensureDefaultFunnel();
   unsubF=onSnapshot(query(col("funnels"),orderBy("position")), snap=>{
     F=snap.docs.map(d=>({id:d.id,...d.data()}));
@@ -248,6 +261,77 @@ $("save").onclick=async()=>{if(!$("title").value.trim())return $("title").focus(
   $("dlg").close()};
 $("del").onclick=async()=>{if(editing&&confirm("Excluir este negócio?")){await deleteDoc(docr("funnels",fid,"deals",editing.id));$("dlg").close()}};
 $("cancel").onclick=()=>$("dlg").close();$("new").onclick=()=>openDlg(null);$("q").oninput=e=>{query_=e.target.value;render()};
+
+/* ---------- prospecção: lista de clientes + contatos ---------- */
+let leads=[],sts=[],view="funil",ptab="lista",pq="";
+const PER=["manhã","tarde","noite","madrugada"],PAL=["#4a8fb5","#b58a2f","#0e9a6f","#b55a5a","#8a5fb5","#6b7c93"];
+const nowL=()=>{const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16)};
+const perOf=h=>h<6?"madrugada":h<12?"manhã":h<18?"tarde":"noite";
+function watchProsp(){
+  unsubL=onSnapshot(col("leads"),s=>{leads=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.ts||0)-(a.ts||0));if(view==="prosp")renderP()});
+  unsubT=onSnapshot(col("lstatus"),s=>{
+    if(s.empty&&!window.__seedSt){window.__seedSt=true;["Não atendeu","Retornar","Interessado","Sem interesse"].forEach((n,i)=>addDoc(col("lstatus"),{name:n,color:PAL[i],pos:i}));return}
+    sts=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.pos-b.pos);if(view==="prosp")renderP()})}
+
+async function osm(n,c){
+  const r=await fetch("https://nominatim.openstreetmap.org/search?"+new URLSearchParams({format:"jsonv2",q:n+" "+c,addressdetails:1,extratags:1,limit:40,countrycodes:"br","accept-language":"pt-BR"}));
+  if(!r.ok)throw new Error("OpenStreetMap HTTP "+r.status);
+  return (await r.json()).filter(x=>x.name).map(x=>{const t=x.extratags||{};return{company:x.name,address:x.display_name.split(", ").slice(1).join(", "),phone:t.phone||t["contact:phone"]||t["contact:mobile"]||""}})}
+async function gPlaces(n,c){
+  const k=localStorage.getItem("tedr_gkey")||"";if(!k)throw new Error('cole sua chave do Google em "Chave Google" primeiro.');
+  let out=[],tok="";
+  for(let i=0;i<3;i++){
+    const r=await fetch("https://places.googleapis.com/v1/places:searchText",{method:"POST",headers:{"Content-Type":"application/json","X-Goog-Api-Key":k,"X-Goog-FieldMask":"nextPageToken,places.displayName,places.formattedAddress,places.nationalPhoneNumber"},body:JSON.stringify({textQuery:n+" em "+c,languageCode:"pt-BR",regionCode:"BR",pageSize:20,...(tok?{pageToken:tok}:{})})});
+    const j=await r.json();if(!r.ok)throw new Error(j.error?.message||"Google HTTP "+r.status);
+    out.push(...(j.places||[]).map(p=>({company:p.displayName?.text||"",address:p.formattedAddress||"",phone:p.nationalPhoneNumber||""})));
+    tok=j.nextPageToken;if(!tok)break}
+  return out}
+async function searchLeads(){
+  const n=$("sn").value.trim(),c=$("sc").value.trim(),m=$("sm");
+  if(!n||!c){m.textContent="Informe o nicho e a cidade.";return}
+  if(window.__busy)return;window.__busy=1;m.textContent="Buscando…";
+  try{
+    const res=await($("ss").value==="google"?gPlaces:osm)(n,c),k=l=>((l.company||"")+((l.phone||"").replace(/\D/g,"")||l.address||"")).toLowerCase().replace(/\W/g,""),have=new Set(leads.map(k));
+    const w=writeBatch(dbf);let add=0,dup=0,np=0;
+    for(const r of res){const kk=k(r);if(have.has(kk)){dup++;continue}have.add(kk);add++;if(!r.phone)np++;w.set(doc(col("leads")),{...r,niche:n,phase:"lista",ts:Date.now()-add})}
+    if(add)await w.commit();
+    m.textContent=`${res.length} encontrados · ${add} adicionados${dup?` · ${dup} já estavam na lista`:""}${np?` · ${np} sem telefone`:""}.`;
+  }catch(e){m.textContent="Erro: "+e.message}finally{window.__busy=0}}
+
+function renderP(){
+  const a=document.activeElement,fk=a&&a.dataset&&a.dataset.k,fv=a&&a.value,fs=a&&a.selectionStart,ct=ptab==="contato";
+  $("pform").style.display=ct?"none":"flex";$("stbar").style.display=ct?"block":"none";
+  $("stbar").innerHTML="<b>Status:</b> "+sts.map(s=>`<span class="chip on" style="--c:${esc(s.color)}">${esc(s.name)} <span data-a="delst" data-s="${s.id}" title="Excluir status">✕</span></span>`).join("")+' <button class="btn s" data-a="addst">+ Status</button>';
+  const L=leads.filter(l=>(ct?l.phase==="contato":l.phase!=="contato")&&(!pq||[l.company,l.niche,l.address,l.phone,l.who,l.owner,l.notes].join(" ").toLowerCase().includes(pq)));
+  const i=(l,f,t)=>`<input data-k="${l.id}|${f}" ${t?`type="${t}" `:""}value="${esc(l[f])}">`;
+  const del=l=>`<button class="btn s d" data-a="del" data-id="${l.id}" title="Excluir">✕</button>`;
+  const rows=L.map(l=>ct?
+    `<tr><td>${i(l,"company")}<div class="mu">${esc([l.niche,l.address].filter(Boolean).join(" · "))}</div></td><td>${i(l,"phone")}</td><td>${i(l,"at","datetime-local")}</td><td>${i(l,"who")}</td>
+    <td>${sts.map(s=>`<span class="chip${(l.sts||[]).includes(s.id)?" on":""}" style="--c:${esc(s.color)}" data-a="st" data-id="${l.id}" data-s="${s.id}">${esc(s.name)}</span>`).join("")}</td><td>${i(l,"owner")}</td>
+    <td><select data-k="${l.id}|period">${PER.map(p=>`<option${l.period===p?" selected":""}>${p}</option>`).join("")}</select></td><td><textarea rows="1" data-k="${l.id}|notes">${esc(l.notes)}</textarea></td>
+    <td class="ac"><button class="btn s${l.in_crm?"":" p"}" data-a="crm" data-id="${l.id}"${l.in_crm?" disabled":""}>${l.in_crm?"✓ no CRM":"Enviar ao CRM"}</button> ${del(l)}</td></tr>`:
+    `<tr><td>${i(l,"company")}</td><td>${i(l,"niche")}</td><td>${i(l,"address")}</td><td>${i(l,"phone")}</td><td class="ac"><button class="btn s p" data-a="move" data-id="${l.id}">Contatar →</button> ${del(l)}</td></tr>`).join("");
+  const H=ct?["Empresa","Número","Data e hora","Falei com quem","Status","Responsável","Horário","Observações",""]:["Empresa","Nicho","Endereço","Número",""];
+  $("sheet").innerHTML=L.length?`<div style="overflow-x:auto"><table class="sheet"><thead><tr>${H.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table></div>`:`<p class="empty">${ct?'Nenhum contato ainda. Na Lista de clientes, clique em "Contatar →".':"Lista vazia. Faça uma busca acima."}</p>`;
+  if(fk){const n=$("sheet").querySelector(`[data-k="${fk}"]`);if(n){n.value=fv;n.focus();try{n.setSelectionRange(fs,fs)}catch{}}}}
+
+$("vw").onclick=()=>{view=view==="funil"?"prosp":"funil";document.body.classList.toggle("pv",view==="prosp");$("prosp").style.display=view==="prosp"?"block":"none";$("vw").textContent=view==="prosp"?"← Funis":"Prospecção";if(view==="prosp")renderP()};
+document.querySelectorAll("[data-pt]").forEach(b=>b.onclick=()=>{ptab=b.dataset.pt;document.querySelectorAll("[data-pt]").forEach(x=>x.classList.toggle("on",x===b));renderP()});
+$("pq").oninput=e=>{pq=e.target.value.toLowerCase();renderP()};
+$("sn").onkeydown=$("sc").onkeydown=e=>{if(e.key==="Enter")searchLeads()};
+$("sheet").onchange=e=>{const k=e.target.dataset.k;if(!k)return;const [id,f]=k.split("|");updateDoc(docr("leads",id),{[f]:e.target.value})};
+$("prosp").onclick=async e=>{
+  const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a,id=b.dataset.id,l=leads.find(x=>x.id===id);
+  if(a==="search")searchLeads();
+  else if(a==="key"){const k=prompt("Chave de API do Google Places. No Google Cloud, restrinja a chave aos seus sites e só à Places API. Deixe vazio para apagar:",localStorage.getItem("tedr_gkey")||"");if(k!==null)k.trim()?localStorage.setItem("tedr_gkey",k.trim()):localStorage.removeItem("tedr_gkey")}
+  else if(a==="move")updateDoc(docr("leads",id),{phase:"contato",at:nowL(),period:perOf(new Date().getHours()),sts:[]});
+  else if(a==="del"){if(confirm("Excluir esta linha?"))deleteDoc(docr("leads",id))}
+  else if(a==="st"){const s=new Set(l.sts||[]);s.has(b.dataset.s)?s.delete(b.dataset.s):s.add(b.dataset.s);updateDoc(docr("leads",id),{sts:[...s]})}
+  else if(a==="addst"){const n=prompt("Nome do novo status:");if(n&&n.trim())addDoc(col("lstatus"),{name:n.trim(),color:PAL[sts.length%PAL.length],pos:Date.now()})}
+  else if(a==="delst"){const s=sts.find(x=>x.id===b.dataset.s);if(!s||!confirm(`Excluir o status "${s.name}"?`))return;const w=writeBatch(dbf);leads.filter(x=>(x.sts||[]).includes(s.id)).forEach(x=>w.update(docr("leads",x.id),{sts:x.sts.filter(y=>y!==s.id)}));w.delete(docr("lstatus",s.id));await w.commit()}
+  else if(a==="crm"){if(!fid||!stages[0])return alert("Abra um funil do CRM primeiro.");
+    await addDoc(col("funnels",fid,"deals"),{title:l.company,org:l.company,contact:l.who||"",email:"",phone:l.phone||"",value:0,close_date:"",notes:[l.notes,l.address].filter(Boolean).join(" — "),stage_id:stages[0].id,created_at:serverTimestamp(),updated_at:serverTimestamp()});
+    updateDoc(docr("leads",id),{in_crm:true})}};
 
 /* ---------- configurações ---------- */
 $("cfgBtn").onclick=()=>openCfg(tab);$("cfgClose").onclick=()=>$("cfg").close();
